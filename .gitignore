@@ -1,0 +1,21 @@
+# Python bytecode and environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Test, coverage, and notebook state
+.pytest_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local logs and temporary files
+*.log
+*.tmp
