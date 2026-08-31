@@ -8,7 +8,7 @@ useful throughput, and diagnosing GPU-memory growth in PyTorch workloads.
 
 - [x] Lab W3D1: Profile Inference on a Real GPU
 - [x] Lab W3D1 Extra: The Memory Leak Hunter
-- [ ] Lab W3D1 Bug: The Leak That Isn't Freed — not completed yet
+- [x] Lab W3D1 Bug: The Leak That Isn't Freed
 
 Completed Day 1 documentation and experimental evidence are under
 [`day-01/`](day-01/).

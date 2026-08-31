@@ -1,0 +1,21 @@
+{
+  "broken_run": {
+    "fp16_gb": 3.061,
+    "int8_gb": 4.791,
+    "int4_gb": 2.879
+  },
+  "diagnosis": {
+    "issue": "del model inside unload() only deletes the local parameter name, not the caller-owned model binding"
+  },
+  "fixed_run": {
+    "fp16_gb": 3.061,
+    "int8_gb": 1.742,
+    "int4_gb": 1.15
+  },
+  "after_cleanup_allocated_gb": {
+    "fp16": 0.0,
+    "int8": 0.0,
+    "int4": 0.0
+  },
+  "green_check": "PASS"
+}

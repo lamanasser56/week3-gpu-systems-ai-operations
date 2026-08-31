@@ -10,9 +10,9 @@ Google Colab on an NVIDIA Tesla T4 with 15360 MiB of GPU memory.
 The experiments examined VRAM behavior, FP16 and INT8 execution,
 context-length effects, GPU utilization versus useful throughput, and
 batching. A second lab established a clean memory control, reproduced a
-deliberate leak, measured its growth, and verified a fix. Both completed labs
-passed their machine Green Check. The unfinished "Leak That Isn't Freed" bug
-lab is intentionally excluded.
+deliberate leak, measured its growth, and verified a fix. A third lab diagnosed
+why deleting a function-local model parameter did not release a caller-owned
+model. All three Day 1 labs passed their machine Green Check.
 
 ## Profile inference experiment
 
@@ -102,9 +102,37 @@ stale references, and applied garbage collection and CUDA cache cleanup where
 appropriate. Together, those changes made the measured memory trend
 effectively flat under the detector threshold.
 
+## The Leak That Isn't Freed
+
+The third lab investigated a broken unload helper whose `del model` statement
+deleted only its local parameter binding. The caller's `model` binding remained
+live, so garbage collection and `torch.cuda.empty_cache()` could not release
+the model's live allocations.
+
+| Run | FP16 (GB) | INT8 (GB) | INT4 (GB) |
+| --- | ---: | ---: | ---: |
+| Broken | 3.061 | 4.791 | 2.879 |
+| Fixed | 3.061 | 1.742 | 1.150 |
+
+The broken run was not a perfectly monotonic FP16-to-INT8-to-INT4 climb. Its
+important signal was contaminated lifetime behavior: INT8 appeared to use
+substantially more resident VRAM than FP16 because the prior object was not
+reliably released. The broken INT4 value is not treated as evidence of normal
+quantization behavior.
+
+The fix deleted `model` in the caller scope that owned the binding, followed
+by garbage collection and CUDA cache cleanup. Allocated memory after cleanup
+was 0.0 GB for FP16, INT8, and INT4, and the expected `FP16 > INT8 > INT4`
+ordering was restored. The lab produced `GREEN CHECK: PASS`.
+
+The key lesson is that `torch.cuda.empty_cache()` is not a substitute for
+deleting live tensor or model references. Scope matters: `del` removes a
+specific binding, and deleting a callee's local parameter does not remove the
+caller's reference to the same object.
+
 ## Machine Verification
 
-Both completed labs produced:
+All three completed labs produced:
 
 ```text
 GREEN CHECK: PASS
@@ -122,6 +150,9 @@ The Memory Leak Hunter verification checked:
 - the clean reload/unload control;
 - an independent slope refit confirming the deliberate leak; and
 - a fixed-run slope below the allowed threshold.
+
+The Leak That Isn't Freed verification checked that the fixed measurements
+satisfied `int8_gb < fp16_gb` and `int4_gb < int8_gb`.
 
 These automated checks make the experiments repeatable and guard against
 drawing conclusions from visual inspection alone.
@@ -143,6 +174,12 @@ drawing conclusions from visual inspection alone.
   reload/unload control, detector settings and classifications, fitted slopes,
   and raw leaky and fixed sample series.
 
+### `03-leak-that-isnt-freed/`
+
+- [`bug_leak_not_freed_report.json`](03-leak-that-isnt-freed/bug_leak_not_freed_report.json)
+  contains the broken and fixed measurements, diagnosis, post-cleanup
+  allocations, and Green Check result.
+
 The raw experimental evidence is kept separate from explanatory
 documentation, and its recorded measurements are not altered here.
 
@@ -153,6 +190,9 @@ documentation, and its recorded measurements are not altered here.
 - GPU utilization is not a direct throughput metric.
 - Batching can dramatically improve aggregate GPU productivity.
 - Live tensor references can create application-level GPU memory leaks.
+- `torch.cuda.empty_cache()` cannot free allocations that remain live through
+  Python references.
+- `del` must remove the binding in the scope that owns the model reference.
 - Memory-leak detection should use repeatable measurements and trends rather
   than visual inspection alone.
 - Automated verification makes performance experiments reproducible.
@@ -161,3 +201,4 @@ documentation, and its recorded measurements are not altered here.
 
 1. [Profile Inference on a Real GPU](01-profile-inference/)
 2. [The Memory Leak Hunter](02-memory-leak-hunter/)
+3. [The Leak That Isn't Freed](03-leak-that-isnt-freed/)
