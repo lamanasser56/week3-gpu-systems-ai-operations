@@ -21,5 +21,5 @@ interpretation.
 
 - [`ab_report.json`](01-the-engine-swap/ab_report.json) records the baseline
   and vLLM throughput, per-concurrency speedups, and predicted speedup.
-- The source [`baselines.json`](../day-02/01-inference-anatomy/baselines.json)
+- The source [`baselines.json`](https://github.com/lamanasser56/week3-gpu-systems-ai-operations/blob/w3d2/day-02/01-inference-anatomy/baselines.json)
   remains with the Day 2 experiment and is referenced rather than duplicated.
