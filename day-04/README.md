@@ -13,5 +13,10 @@ locks a model configuration for later bootcamp work.
 for FP16. The AWQ model was therefore locked with the tested vLLM launch
 configuration.
 
+In this measured setup, AWQ reduced the model weight footprint, but total GPU
+memory reported by `nvidia-smi` did not fall by the same amount. Under vLLM's
+configured GPU-memory-utilization target, memory freed by smaller weights
+could be reused for additional KV-cache blocks, increasing serving headroom.
+
 See [the full lab review](01-quantise-and-lock-the-model/) for measurements,
 interpretation, reproducibility notes, and verification artifacts.
